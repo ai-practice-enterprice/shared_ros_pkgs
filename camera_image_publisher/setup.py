@@ -21,7 +21,8 @@ setup(
     entry_points={
         # executable_name = pkg_name.file_name:func_name 
         'console_scripts': [
-            "img_publisher = camera_image_publisher.cam_publisher:main"
+            "img_publisher = camera_image_publisher.cam_publisher:main",
+            "img_jetson_publisher = camera_image_publisher.cam_jetson_publisher:main",
         ],
     },
 )

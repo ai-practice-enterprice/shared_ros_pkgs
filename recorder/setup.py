@@ -21,7 +21,8 @@ setup(
     entry_points={
         # executable_name = pkg_name.file_name:func_name 
         'console_scripts': [
-            "record = recorder.recorder_node:main" 
+            "record = recorder.recorder_node:main",
+            "record_jetson = recorder.recorder_jetson_node:main",
         ],
     },
 )
