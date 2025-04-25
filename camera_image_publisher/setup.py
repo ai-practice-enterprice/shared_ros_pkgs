@@ -23,6 +23,7 @@ setup(
         'console_scripts': [
             "img_publisher = camera_image_publisher.cam_publisher:main",
             "img_jetson_publisher = camera_image_publisher.cam_jetson_publisher:main",
+            "img_gst_publisher = camera_image_publisher.test_gst_no_opencv:main",
         ],
     },
 )

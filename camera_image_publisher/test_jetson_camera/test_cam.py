@@ -1,3 +1,6 @@
+# other possibilty since it seems that as from ver 4.9.0.80 OpenCV doesn't support CSI cameras   
+# https://www.waveshare.com/wiki/21_Line_Following_Autonomous_Driving_with_OpenCV
+
 import cv2
 
 def gstreamer_pipeline(
