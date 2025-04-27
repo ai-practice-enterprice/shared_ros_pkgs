@@ -47,8 +47,7 @@ def init_VideoWriter(cap: cv2.VideoCapture):
 
         # might be required instead
         # https://forums.developer.nvidia.com/t/displaying-to-the-screen-with-opencv-and-gstreamer/140648/9
-        gst_out = "appsrc ! videoconvert ! video/x-raw,format=BGR ! nvvidconv ! nvv4l2h264enc insert-sps-pps=1 ! h264parse ! matroskamux ! filesink location=output.mkv"
-        
+
         video_writer = cv2.VideoWriter(
             gst_out, 
             cv2.CAP_GSTREAMER,
