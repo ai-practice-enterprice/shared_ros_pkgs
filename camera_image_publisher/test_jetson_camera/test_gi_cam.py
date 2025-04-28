@@ -25,6 +25,8 @@ class GstOpenCVConverter():
  
         try:
             print("Running stream.")
+            if self.show_opencv_window:
+                GLib.idle_add(self.show_frame)
             self.mainloop.run()
         except KeyboardInterrupt:
             print("Stopping stream.")
@@ -43,7 +45,7 @@ class GstOpenCVConverter():
         # continue calling this function 
         return True 
 
-    def get_frame(self,frame):
+    def get_frame(self):
         return self.frame
 
     def setup_source_pipeline(self,pipeline_str):
@@ -92,24 +94,14 @@ class GstOpenCVConverter():
         # however the data we receive needs to be assigned a data type => since a OpenCV frame in RGB requires int values ranging from [0 ; 255]
         # then we convert into a Uint8 (unsigned integer 8 bits)   
         frame_data = np.frombuffer(map_info.data,dtype=np.uint8)
+        # release the buffer to avoid buffer overflow
+        buffer.unmap(map_info)
         # then we transform the 1D array into a multidimensional array (height*width*len(nbr of channels) => RGB = 3 channels red , green , blue)
         self.frame = frame_data.reshape((height, width, 3))
         
         if self.frame is not None:
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
-            if self.frame is not None and self.recording:
-
-                frame_bytes = self.frame.tobytes()
-                buf = Gst.Buffer.new_allocate(None, len(frame_bytes), None)
-                buf.fill(0, frame_bytes)
-                duration = Gst.util_uint64_scale_int(1, Gst.SECOND, int(self.record_fps))  # frame duration
-                buf.duration = duration
-                buf.pts = self.timestamp
-                buf.dts = self.timestamp
-                self.timestamp += duration
-                if self.recording:
-                    self.push_frame_async(buf)
-            
+            # DO NOT CONVERT
+            # self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             return Gst.FlowReturn.OK
         else:
             return Gst.FlowReturn.ERROR
@@ -128,13 +120,13 @@ class GstOpenCVConverter():
 
 if __name__ == "__main__":
     # pipeline string : for the Jetson's CSI camera
-    # pipeline_str = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=640, height=480, format=NV12, framerate=30/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=RGB ! appsink name=sink"
+    pipeline_str = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=640, height=480, format=NV12, framerate=30/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink name=sink max-buffers=2" 
     
     # pipeline string : for Linux's OS showing video in a window
-    # pipeline_str = "v4l2src ! decodebin ! videoconvert ! autovideosink name=sink"
+    # pipeline_str = "v4l2src ! decodebin ! videoconvert ! autovideosink name=autosink"
     
     # pipeline string : for Linux's OS sending video frames to the application
-    pipeline_str = "v4l2src ! decodebin ! videoconvert ! video/x-raw,format=RGB ! appsink name=sink"
+    # pipeline_str = "v4l2src ! decodebin ! videoconvert ! video/x-raw,format=RGB ! appsink name=sink"
     
     # pipeline string : other options
     # use the command 'gst-inspect-1.0'

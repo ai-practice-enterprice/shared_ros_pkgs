@@ -4,7 +4,7 @@ import gi
 gi.require_version('Gst','1.0')
 gi.require_version('GstVideo','1.0')
 from gi.repository import Gst , GLib
-
+from threading import Thread
 
 # reference:
 # https://gstreamer.freedesktop.org/documentation/index.html?gi-language=python
@@ -19,19 +19,29 @@ class GstOpenCVConverter():
 
         self.setup_source_pipeline(pipeline_source)
         
+        self.is_running = False
+
         # init 1st frame
         self.frame = None
         self.show_opencv_window = show_opencv_window
  
-        try:
-            print("Running stream.")
-            self.mainloop.run()
-        except KeyboardInterrupt:
-            print("Stopping stream.")
-        finally:
-            # Clean up
+
+    def start(self):
+        if not self.is_running:
+            self.is_running = True
+            self.pipeline.set_state(Gst.State.PLAYING)
+            self._main_loop = GLib.MainLoop()
+            self._thread = Thread(target=self._main_loop.run)
+            self._thread.start()
+
+    def stop(self):
+        if self.is_running:
+            self.is_running = False
             self.pipeline.set_state(Gst.State.NULL)
-            cv2.destroyAllWindows()
+            if self._main_loop and self._main_loop.is_running():
+                GLib.idle_add(self._main_loop.quit)
+            if self._thread and self._thread.is_alive():
+                self._thread.join()
 
     def show_frame(self):
         if self.frame is not None:
@@ -43,7 +53,8 @@ class GstOpenCVConverter():
         # continue calling this function 
         return True 
 
-    def get_frame(self,frame):
+    def get_frame(self):
+        print(f"returning frame to ROS node")
         return self.frame
 
     def setup_source_pipeline(self,pipeline_str):
@@ -92,24 +103,14 @@ class GstOpenCVConverter():
         # however the data we receive needs to be assigned a data type => since a OpenCV frame in RGB requires int values ranging from [0 ; 255]
         # then we convert into a Uint8 (unsigned integer 8 bits)   
         frame_data = np.frombuffer(map_info.data,dtype=np.uint8)
+        # release the buffer to avoid buffer overflow
+        buffer.unmap(map_info)
         # then we transform the 1D array into a multidimensional array (height*width*len(nbr of channels) => RGB = 3 channels red , green , blue)
         self.frame = frame_data.reshape((height, width, 3))
         
         if self.frame is not None:
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
-            if self.frame is not None and self.recording:
-
-                frame_bytes = self.frame.tobytes()
-                buf = Gst.Buffer.new_allocate(None, len(frame_bytes), None)
-                buf.fill(0, frame_bytes)
-                duration = Gst.util_uint64_scale_int(1, Gst.SECOND, int(self.record_fps))  # frame duration
-                buf.duration = duration
-                buf.pts = self.timestamp
-                buf.dts = self.timestamp
-                self.timestamp += duration
-                if self.recording:
-                    self.push_frame_async(buf)
-            
+            # DO NOT CONVERT
+            # self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             return Gst.FlowReturn.OK
         else:
             return Gst.FlowReturn.ERROR

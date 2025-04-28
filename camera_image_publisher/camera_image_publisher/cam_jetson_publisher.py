@@ -9,7 +9,7 @@ from builtin_interfaces.msg import Time
 # everything OpenCV related
 from cv_bridge import CvBridge
 import cv2
-
+from threading import Thread
 from GstOpenCVConverter import GstOpenCVConverter
 
 # The Jetson Nano's GPU has dedicated hardware for video encoding and decoding. 
@@ -45,14 +45,15 @@ class ImagePublisher(Node):
             video/x-raw(memory:NVMM), width=640, height=480, format=NV12, framerate=30/1 ! nvvidconv ! \
             video/x-raw, format=BGRx ! \
             videoconvert ! \
-            video/x-raw, format=RGB ! \
-            appsink name=sink"
+            video/x-raw, format=BGR ! \
+            appsink name=sink max-buffers=2"
         self.gst_to_frame_converter = GstOpenCVConverter(pipeline_source=pipeline_str)
+        self.gst_to_frame_converter.start()
+
         self.bridge = CvBridge()
 
         self.last_image = None
-        self.PUBLISH_RATE = 10
-        self.IMAGE_READING_RATE = 60
+        self.PUBLISH_RATE = 30
 
         self.publisher_image_compressed = self.create_publisher(
            msg_type=CompressedImage, 
@@ -66,55 +67,46 @@ class ImagePublisher(Node):
            qos_profile=10
         )
         
-        self.readImage = self.create_timer(
-           timer_period_sec=1.0/self.IMAGE_READING_RATE, 
-           callback=self.read_image
-        )
-
         self.publishImage = self.create_timer(
            timer_period_sec=1.0/self.PUBLISH_RATE, 
            callback=self.publish_image
         )
             
-        
-    def read_image(self):
-        try:
-            self.last_image = self.gst_to_frame_converter.get_frame()
-        except Exception as e:
-            self.get_logger().info(e)
-
     def publish_image(self):
-        # getting frame from openCV (thus from the camera)
-        img_msg_comp = self.bridge.cv2_to_compressed_imgmsg(self.last_image)
-        img_msg = self.bridge.cv2_to_imgmsg(self.last_image)
-        
-        # adding time
-        time = Time()
-        mgs_time = self.get_clock().now().seconds_nanoseconds()
-        time.sec = int(mgs_time[0])
-        time.nanosec = int(mgs_time[1])
-        img_msg_comp.header.stamp = time
-        img_msg.header.stamp = time
+        frame = self.gst_to_frame_converter.get_frame()
+        if frame is not None:
+            try:
+                timestamp = self.get_clock().now().to_msg()
+                img_msg_comp = self.bridge.cv2_to_compressed_imgmsg(frame)
+                img_msg_comp.header.stamp = timestamp
+                img_msg_comp.header.frame_id = "camera_link_optical"
+                self.publisher_image_compressed.publish(img_msg_comp)
+                self.get_logger().info('Publishing video frame compressed')
 
-        img_msg_comp.header.frame_id = "camera_link_optical"
-        img_msg.header.frame_id = "camera_link_optical"
+                img_msg = self.bridge.cv2_to_imgmsg(frame)
+                img_msg.header.stamp = timestamp
+                img_msg.header.frame_id = "camera_link_optical"
+                self.publisher_image.publish(img_msg)
+                self.get_logger().info('Publishing video frame raw')
+            except Exception as e:
+                self.get_logger().error(f"Error publishing image: {e}")
 
-        # publish to the ROS2 topic
-        self.publisher_image_compressed.publish(img_msg_comp)
-        self.get_logger().info('Publishing video frame compressed')
-        self.publisher_image.publish(img_msg_comp)
-        self.get_logger().info('Publishing video frame raw')
+    def destroy_node(self):
+        self.get_logger().info('Stopping GStreamer pipeline...')
+        self.gst_to_frame_converter.stop()
+        super().destroy_node()
 
   
 def main(args=None):
-  rclpy.init(args=args)
-  
-  image_publisher = ImagePublisher()
-  rclpy.spin(image_publisher)
-  
-  image_publisher.cap.release()
-  image_publisher.destroy_node()
-  rclpy.shutdown()
+    rclpy.init(args=args)
+    image_publisher = ImagePublisher()
+    try:
+        rclpy.spin(image_publisher)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt, shutting down.")
+    finally:
+        image_publisher.destroy_node()
+        rclpy.shutdown()
   
 if __name__ == '__main__':
   main()
