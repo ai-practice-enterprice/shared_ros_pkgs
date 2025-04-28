@@ -124,23 +124,3 @@ class GstOpenCVConverter():
             print(f"Error: {err}, {debug}")
             loop.quit()
         return True
-
-
-if __name__ == "__main__":
-    # pipeline string : for the Jetson's CSI camera
-    # pipeline_str = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=640, height=480, format=NV12, framerate=30/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=RGB ! appsink name=sink"
-    
-    # pipeline string : for Linux's OS showing video in a window
-    # pipeline_str = "v4l2src ! decodebin ! videoconvert ! autovideosink name=sink"
-    
-    # pipeline string : for Linux's OS sending video frames to the application
-    pipeline_str = "v4l2src ! decodebin ! videoconvert ! video/x-raw,format=RGB ! appsink name=sink"
-    
-    # pipeline string : other options
-    # use the command 'gst-inspect-1.0'
-        
-    GstOpenCVConverter(
-        pipeline_source=pipeline_str,
-        show_opencv_window=True,
-    )
-

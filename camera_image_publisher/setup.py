@@ -10,8 +10,15 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('lib/' + package_name, [package_name,'/GstOpenCVConverter.py']),
     ],
-    install_requires=['setuptools'],
+    install_requires=[
+        'setuptools',
+        'numpy',
+        'opencv',
+        'pycairo',
+        'PyGObject',
+    ],
     zip_safe=True,
     maintainer='ubuntu',
     maintainer_email='ubuntu@todo.todo',
@@ -23,7 +30,6 @@ setup(
         'console_scripts': [
             "img_publisher = camera_image_publisher.cam_publisher:main",
             "img_jetson_publisher = camera_image_publisher.cam_jetson_publisher:main",
-            "img_gst_publisher = camera_image_publisher.test_gst_no_opencv:main",
         ],
     },
 )
