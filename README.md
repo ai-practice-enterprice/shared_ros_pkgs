@@ -23,3 +23,4 @@ This repository contains the following ROS2 (Humble) packages
 - yolo_ros:
   - yolo_node \
     [ROS2 Node that subscribes to a Image topic and publishes the processed result to a Image topic `yolo_result`]
+![global_overview](./assets/ros_shared_pkgs_structure.svg)
