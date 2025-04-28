@@ -1,0 +1,50 @@
+ # pipeline sources :
+    # filesrc location=<path to file>
+    # v4l2src device=<path to device>
+    # ksvideosrc device-path=" <path to device> "
+    # avfoundation device-index= <device index>
+    # nvarguscamerasrc
+    # udpsrc port=<port nbr>
+    # tcpclientsrc port=<port nbr>
+    # tcpserversrc port=<port nbr>
+    # rtspsrc location=rtsp://user:password@<IP>:<port nbr>/<path to rtsp service> latency=<int latency>
+    # urisourcebin uri=<http:// file:// rstp:// etc...>
+    # appsrc
+    # pulsesrc
+    # alsasrc
+    # osxaudiosrc
+    # gdisrc
+    # ximagesrc
+    # v4l2radio
+
+    # pipeline sinks :
+    # video :
+    # -------
+    # autovideosink
+    # ximagesink
+    # waylandsink
+    # glimagesink
+    # xvimagesink
+    # direct3dvideosink
+    # osxvideosink
+    # audio :
+    # -------
+    # autoaudiosink
+    # pulsesink
+    # alsasink
+    # osxaudiosink
+    # wasapisink
+    # file :
+    # ------
+    # filesink location=<path to save file>
+    # qtmux ! filesink location=<..>
+    # oggmux ! filesink location=<..>
+    # udpsink host=... port=...
+    # tcpclientsink port=...
+    # tcpserversink port=...
+    # rtspclientsink 
+    # application :
+    # -------------
+    # appsink
+    # fakesink
+    # intervideosink / interaudiosink

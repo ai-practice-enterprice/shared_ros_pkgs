@@ -19,8 +19,8 @@ class ImageToVideoConverter(Node):
         self.bridge = CvBridge()
         self.video_writer = None
         self.image_capture = self.create_subscription(
-            msg_type=Image,
-            topic='camera/image_raw',
+            msg_type=CompressedImage,
+            topic='camera/image_raw/compressed',
             callback=self.image_callback,
             qos_profile=10
         )
@@ -29,7 +29,7 @@ class ImageToVideoConverter(Node):
         try:
             # np_arr = np.frombuffer(msg.data, np.uint8)
             # cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            cv_image = self.bridge.imgmsg_to_cv2(msg,'rgb8')
+            cv_image = self.bridge.compressed_imgmsg_to_cv2(msg,'rgb8')
             
             if self.video_writer is None:
                 self.init_VideoWriter(cv_image)

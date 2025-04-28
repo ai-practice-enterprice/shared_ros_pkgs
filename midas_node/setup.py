@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'recorder'
+package_name = 'midas_node'
 
 setup(
     name=package_name,
@@ -10,8 +10,15 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('lib/' + package_name, [package_name+'/MidasDetector.py']),
     ],
-    install_requires=['setuptools'],
+    install_requires=[
+        'setuptools',
+        'torch',
+        'numpy',
+        'opencv',
+        'timm'
+    ],
     zip_safe=True,
     maintainer='ubuntu',
     maintainer_email='ubuntu@todo.todo',
@@ -19,10 +26,9 @@ setup(
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
-        # executable_name = pkg_name.file_name:func_name 
         'console_scripts': [
-            "record = recorder.recorder_node:main",
-            "record_jetson = recorder.recorder_jetson_node:main",
+            # executable_name = pkg_name.file_name:func_name 
+            "depthV2 = midas_node.detectionV2:main"
         ],
     },
 )
