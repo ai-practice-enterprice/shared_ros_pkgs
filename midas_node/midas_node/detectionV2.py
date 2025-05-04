@@ -16,8 +16,8 @@ class MidasNode(Node):
         self.bridge = CvBridge()
 
         self.subscription = self.create_subscription(
-            msg_type=CompressedImage,
-            topic='camera/image_raw/compressed',
+            msg_type=Image,
+            topic='camera/image_raw',
             callback=self.camera_callback,
             qos_profile=10
         )
@@ -28,14 +28,33 @@ class MidasNode(Node):
             qos_profile=1
         )
 
-    def camera_callback(self, data):
-        img = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+        self.cmd_pub = self.create_publisher(Twist, 'midas_detection', 10)
+        self.previous_status = None
 
-        depth_colored, depth_raw = self.midas.predict_depth(img)
+    def camera_callback(self, data):
+        img = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
+        depth_colored, depth_raw , danger = self.midas.predict_depth(img)
         
         img_msg = self.bridge.cv2_to_imgmsg(depth_colored)  
 
         self.img_pub.publish(img_msg)
+
+        # Make New Twist Message To Manage Movement of Robot
+        twist = Twist()
+        if danger:
+            twist.linear.x = 0.0
+            if self.previous_status != "STOP":
+                self.get_logger().info("STOP")
+                self.previous_status = "STOP"
+        else:
+            twist.linear.x = 1.0
+            if self.previous_status != "GO":
+                self.get_logger().info("GO")
+                self.previous_status = "GO"
+
+        self.cmd_pub.publish(twist)
+
 
 def main(args=None):
     rclpy.init(args=args)
