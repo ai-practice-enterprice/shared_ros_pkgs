@@ -39,6 +39,7 @@ class ImagePublisher(Node):
     def __init__(self, node_name = "jetsonCameraPublisher", *, context = None, cli_args = None, namespace = None, use_global_arguments = True, enable_rosout = True, start_parameter_services = True, parameter_overrides = None, allow_undeclared_parameters = False, automatically_declare_parameters_from_overrides = False):
         super().__init__(node_name, context=context, cli_args=cli_args, namespace=namespace, use_global_arguments=use_global_arguments, enable_rosout=enable_rosout, start_parameter_services=start_parameter_services, parameter_overrides=parameter_overrides, allow_undeclared_parameters=allow_undeclared_parameters, automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides)
         
+        self.get_logger().info('---- Booting up jetson image publisher ----')
 
         pipeline_str = "\
             nvarguscamerasrc ! \
@@ -71,6 +72,8 @@ class ImagePublisher(Node):
            timer_period_sec=1.0/self.PUBLISH_RATE, 
            callback=self.publish_image
         )
+        self.get_logger().info('---- Booting up jetson image publisher : Complete ----')
+
             
     def publish_image(self):
         frame = self.gst_to_frame_converter.get_frame()
@@ -81,13 +84,13 @@ class ImagePublisher(Node):
                 img_msg_comp.header.stamp = timestamp
                 img_msg_comp.header.frame_id = "camera_link_optical"
                 self.publisher_image_compressed.publish(img_msg_comp)
-                self.get_logger().info('Publishing video frame compressed')
+                # self.get_logger().info('Publishing video frame compressed')
 
                 img_msg = self.bridge.cv2_to_imgmsg(frame)
                 img_msg.header.stamp = timestamp
                 img_msg.header.frame_id = "camera_link_optical"
                 self.publisher_image.publish(img_msg)
-                self.get_logger().info('Publishing video frame raw')
+                # self.get_logger().info('Publishing video frame raw')
             except Exception as e:
                 self.get_logger().error(f"Error publishing image: {e}")
 
