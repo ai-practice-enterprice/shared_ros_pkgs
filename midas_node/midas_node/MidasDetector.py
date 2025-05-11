@@ -14,6 +14,7 @@ class MidasDetector:
     # Constructor
     def __init__(self, model_type=ModelType.MIDAS_SMALL): # Use small model for faster speed
         print("Loading MiDaS model...")
+        # MAKE SURE => https://qengineering.eu/install-pytorch-on-jetson-nano.html
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = torch.hub.load("isl-org/MiDaS", model_type.value).to(self.device).eval()
 
@@ -46,8 +47,9 @@ class MidasDetector:
         # Detect Danger in Rectangle
         h, w = depth_raw.shape
         x, y, roi_w, roi_h = w//2 - w//8, h//2 - h//8, w//4, h//4
+        
         roi_depth = depth_raw[y:y+roi_h, x:x+roi_w]
         threshold = 0.8 * depth_raw.max()
         danger = np.any(roi_depth > threshold)
 
-        return depth_colored, depth_raw , danger
+        return depth_colored, depth_raw , danger , (x, y, roi_w, roi_h)
